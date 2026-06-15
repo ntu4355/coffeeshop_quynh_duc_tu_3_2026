@@ -102,7 +102,7 @@ class _ManageUsersState extends State<ManageUsers> {
                             ),
                           ),
                           Text(
-                            data['email'] ?? '',
+                            data['e-mail'] ?? '',
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 13,

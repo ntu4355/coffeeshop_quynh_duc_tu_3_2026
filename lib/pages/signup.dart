@@ -209,7 +209,7 @@ class _SignUpState extends State<SignUp> {
                                               .set({
                                                 'fullName': fullName,
                                                 'username': username,
-                                                'email': email,
+                                                'e-mail': email,
                                                 'address': address,
                                                 'createdAt':
                                                     FieldValue.serverTimestamp(),

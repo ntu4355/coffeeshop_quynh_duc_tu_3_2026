@@ -45,6 +45,7 @@ class UserService {
   Future<void> updateProfile({
     String? fullName,
     String? username,
+    String? email,
     String? address,
   }) async {
     try {
@@ -54,6 +55,7 @@ class UserService {
       final updates = <String, dynamic>{};
       if (fullName != null) updates['fullName'] = fullName;
       if (username != null) updates['username'] = username;
+      if (email != null) updates['e-mail'] = email;
       if (address != null) updates['address'] = address;
 
       await _firestore.collection('users').doc(uid).update(updates);
@@ -63,7 +65,7 @@ class UserService {
         // Tạo object MỚI để ValueNotifier trigger rebuild
         userNotifier.value = UserModel(
           uid: user.uid,
-          email: user.email,
+          email: email ?? user.email,
           createdAt: user.createdAt,
           fullName: fullName ?? user.fullName,
           username: username ?? user.username,
