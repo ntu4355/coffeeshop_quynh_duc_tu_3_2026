@@ -16,6 +16,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final fullNameController = TextEditingController(text: user.fullName);
     final usernameController = TextEditingController(text: user.username);
+    final emailController = TextEditingController(text: user.email);
     final addressController = TextEditingController(text: user.address);
 
     showDialog(
@@ -43,6 +44,14 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 12.0),
               TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12.0),
+              TextField(
                 controller: addressController,
                 decoration: const InputDecoration(
                   labelText: 'Địa chỉ',
@@ -63,6 +72,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 await UserService.instance.updateProfile(
                   fullName: fullNameController.text,
                   username: usernameController.text,
+                  email: emailController.text,
                   address: addressController.text,
                 );
                 Navigator.pop(context);
