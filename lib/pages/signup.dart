@@ -209,7 +209,7 @@ class _SignUpState extends State<SignUp> {
                                               .set({
                                                 'fullName': fullName,
                                                 'username': username,
-                                                'e-mail': email,
+                                                'email': email,
                                                 'address': address,
                                                 'createdAt':
                                                     FieldValue.serverTimestamp(),
@@ -232,7 +232,7 @@ class _SignUpState extends State<SignUp> {
                                           );
                                           Navigator.pushNamedAndRemoveUntil(
                                             context,
-                                            '/home',
+                                            '/', // Chuyển về root để hiển thị BottomNav
                                             (route) => false,
                                           );
                                         }

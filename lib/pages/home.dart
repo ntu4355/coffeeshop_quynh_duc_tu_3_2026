@@ -1,17 +1,13 @@
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:coffee_app/model/category_model.dart';
-import 'package:coffee_app/model/hotcoffee_model.dart';
 import 'package:coffee_app/pages/detail_page.dart';
 import 'package:coffee_app/service/category_data.dart';
-import 'package:coffee_app/service/hotcoffee_data.dart';
-import 'package:coffee_app/model/coldcoffee_model.dart';
-import 'package:coffee_app/service/coldcoffee_data.dart';
-import 'package:coffee_app/pages/order.dart';
-import 'package:coffee_app/pages/wallet.dart';
-import 'package:coffee_app/pages/profile.dart';
 import 'package:coffee_app/service/user_service.dart';
 import 'package:coffee_app/model/user_model.dart';
+import 'package:coffee_app/model/product_model.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -22,18 +18,39 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<CategoryModel> categories = [];
-  List<HotCoffeeModel> hotCoffee = [];
-  List<ColdCoffeeModel> coldCoffee = [];
-  int currentIndex = 0;
   int selectedCategoryIndex = 0;
 
   @override
   void initState() {
     categories = getCategories();
-    hotCoffee = getHotCoffee();
-    coldCoffee = getColdCoffee();
     super.initState();
   }
+
+  String _getGreeting() {
+    var hour = DateTime.now().hour;
+    if (hour < 12) return 'Chào buổi sáng,';
+    if (hour < 18) return 'Chào buổi chiều,';
+    return 'Chào buổi tối,';
+  }
+
+  // Dữ liệu banner giả định
+  final List<Map<String, String>> promos = [
+    {
+      'title': 'Mua 1 Tặng 1',
+      'subtitle': 'Áp dụng cho Cafe Lạnh',
+      'color': '0xFF6B4F35',
+    },
+    {
+      'title': 'Giảm 20%',
+      'subtitle': 'Khi nạp ví trên 200k',
+      'color': '0xFF8D6E63',
+    },
+    {
+      'title': 'Món Mới!',
+      'subtitle': 'Trà Đào Cam Sả đã có mặt',
+      'color': '0xFF5D4037',
+    },
+  ];
 
   Widget _buildProductGrid(Color coffeeBrown) {
     Query query = FirebaseFirestore.instance.collection('products');
@@ -56,39 +73,156 @@ class _HomeState extends State<Home> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        double screenWidth = MediaQuery.of(context).size.width;
-        // Tự động tính số cột: Nếu màn hình > 1200px hiện 5 cột, > 800px hiện 3 cột, còn lại 2 cột.
-        int crossAxisCount = screenWidth > 1200
-            ? 5
-            : (screenWidth > 800 ? 3 : 2);
-
         final docs = snapshot.data?.docs ?? [];
-
         if (docs.isEmpty) {
           return const Center(child: Text('Không có sản phẩm nào'));
         }
 
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: 0.75,
-            mainAxisSpacing: 12.0,
-            crossAxisSpacing: 12.0,
-          ),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final data = docs[index].data() as Map<String, dynamic>;
-            return FoodTile(
-              context,
-              data['name'] ?? '',
-              data['image'] ?? '',
-              data['price'], // Truyền dynamic (số hoặc chuỗi từ data cũ)
-              data['description'] ?? '',
-              coffeeBrown,
-            );
-          },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader("Thực đơn", coffeeBrown),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true, // Quan trọng để đặt trong ListView
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.82,
+                mainAxisSpacing: 16.0,
+                crossAxisSpacing: 16.0,
+              ),
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final data = docs[index].data() as Map<String, dynamic>;
+                final product = ProductModel.fromMap(data, id: docs[index].id);
+                return FoodTile(
+                  context,
+                  product.name ?? '',
+                  product.image ?? '',
+                  product.price,
+                  product.description ?? '',
+                  coffeeBrown,
+                );
+              },
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildPromoSlider(Color coffeeBrown) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    // Giới hạn chiều rộng card để không bị quá to trên màn hình lớn
+    double cardWidth = screenWidth > 600 ? 400 : screenWidth * 0.85;
+
+    return SizedBox(
+      height: 160,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(
+          dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
+        ),
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: promos.length,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 10),
+          itemBuilder: (context, index) {
+            return Container(
+              width: cardWidth,
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Color(int.parse(promos[index]['color']!)),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(
+                      int.parse(promos[index]['color']!),
+                    ).withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -20,
+                    bottom: -20,
+                    child: Icon(
+                      Icons.coffee,
+                      size: 100,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          promos[index]['title']!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          promos[index]['subtitle']!,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "Khám phá",
+                            style: TextStyle(
+                              color: coffeeBrown,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color coffeeBrown) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: coffeeBrown,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 
@@ -100,135 +234,124 @@ class _HomeState extends State<Home> {
     return Scaffold(
       backgroundColor: background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'QDT Coffee',
-                        style: TextStyle(
-                          color: coffeeBrown,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 600,
+            ), // Giữ giao diện gọn gàng trên màn hình lớn
+            child: ListView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 16.0,
+              ),
+              children: [
+                // Header: Greeting and Profile
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Tên thương hiệu ở bên trái
+                    Text(
+                      'QDT COFFEE',
+                      style: TextStyle(
+                        color: coffeeBrown,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Đặt hàng ngay',
-                        style: TextStyle(
-                          color: coffeeBrown.withOpacity(0.75),
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                  ValueListenableBuilder<UserModel?>(
-                    valueListenable: UserService.instance.userNotifier,
-                    builder: (context, user, _) {
-                      return MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, '/profile');
+                    ),
+                    // Lời chào và Profile ở bên phải
+                    Row(
+                      children: [
+                        ValueListenableBuilder<UserModel?>(
+                          valueListenable: UserService.instance.userNotifier,
+                          builder: (context, user, _) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  _getGreeting(),
+                                  style: TextStyle(
+                                    color: coffeeBrown.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  user?.fullName != null &&
+                                          user!.fullName!.isNotEmpty
+                                      ? user.fullName!.split(' ').last
+                                      : 'Bạn',
+                                  style: TextStyle(
+                                    color: coffeeBrown,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            );
                           },
-                          child: Row(
-                            children: [
-                              Text(
-                                user?.username ?? '',
-                                style: TextStyle(
-                                  color: coffeeBrown,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 52,
-                                height: 52,
-                                decoration: BoxDecoration(
-                                  color: coffeeBrown,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
-                              ),
-                            ],
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/profile'),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.person_outline,
+                              color: coffeeBrown,
+                            ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Tìm kiếm cà phê...',
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Color(0xFF6B4F35),
+                      ],
                     ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Search Bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Tìm kiếm cà phê...',
+                      prefixIcon: Icon(Icons.search, color: Color(0xFF6B4F35)),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 16.0),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 56,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final bool selected = selectedCategoryIndex == index;
-                    return MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
+                const SizedBox(height: 24),
+                // Promo Slider
+                _buildPromoSlider(coffeeBrown),
+                const SizedBox(height: 24),
+                // Categories Header
+                _buildSectionHeader("Danh mục", coffeeBrown),
+                const SizedBox(height: 12),
+                // Category Horizontal List
+                SizedBox(
+                  height: 45,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: categories.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final bool selected = selectedCategoryIndex == index;
+                      return GestureDetector(
                         onTap: () =>
                             setState(() => selectedCategoryIndex = index),
                         child: Container(
-                          margin: const EdgeInsets.only(left: 4.0),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 10.0,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
                           decoration: BoxDecoration(
                             color: selected ? coffeeBrown : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: selected
-                                ? [
-                                    BoxShadow(
-                                      color: coffeeBrown.withOpacity(0.15),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ]
-                                : [
-                                    const BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 4,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          alignment: Alignment.center,
                           child: Text(
                             categories[index].name ?? '',
                             style: TextStyle(
@@ -237,55 +360,18 @@ class _HomeState extends State<Home> {
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(child: _buildProductGrid(coffeeBrown)),
-            ],
+                const SizedBox(height: 24),
+                // Product Grid via StreamBuilder
+                _buildProductGrid(coffeeBrown),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          if (index == 0) return;
-          switch (index) {
-            case 1:
-              Navigator.pushReplacementNamed(context, '/order');
-              break;
-            case 2:
-              Navigator.pushReplacementNamed(context, '/wallet');
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(context, '/profile');
-              break;
-          }
-        },
-        selectedItemColor: coffeeBrown,
-        unselectedItemColor: coffeeBrown.withOpacity(0.45),
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Trang chủ',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined),
-            label: 'Đơn hàng',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.payment_outlined),
-            label: 'Số dư',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Cá nhân',
-          ),
-        ],
       ),
     );
   }
@@ -330,34 +416,37 @@ Widget FoodTile(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              height: 120,
-              decoration: BoxDecoration(
-                color: const Color(0xFFf4eee3),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+            Hero(
+              tag: image,
+              child: Container(
+                width: double.infinity,
+                height: 140,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFf4eee3),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
                 ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  child: image.startsWith('http')
+                      ? Image.network(
+                          image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image),
+                        )
+                      : Image.asset(
+                          image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.broken_image),
+                        ),
                 ),
-                child: image.startsWith('http')
-                    ? Image.network(
-                        image,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.broken_image),
-                      )
-                    : Image.asset(
-                        image,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.broken_image),
-                      ),
               ),
             ),
             Padding(
@@ -383,15 +472,32 @@ Widget FoodTile(
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    price is num
-                        ? "${price.toStringAsFixed(0)}k"
-                        : price.toString(),
-                    style: TextStyle(
-                      color: coffeeBrown,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        price is num
+                            ? "${price.toStringAsFixed(0)}k"
+                            : price.toString(),
+                        style: TextStyle(
+                          color: coffeeBrown,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: coffeeBrown,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -401,31 +507,4 @@ Widget FoodTile(
       ),
     ),
   );
-}
-
-class CategoryTitle extends StatelessWidget {
-  final String name;
-  const CategoryTitle({required this.name, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      margin: const EdgeInsets.only(right: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Text(
-        name,
-        style: const TextStyle(
-          color: Color(0xFF6B4F35),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
 }

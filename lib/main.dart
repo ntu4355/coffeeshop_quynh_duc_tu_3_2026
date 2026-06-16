@@ -11,6 +11,7 @@ import 'package:coffee_app/pages/order.dart';
 import 'package:coffee_app/pages/profile.dart';
 import 'package:coffee_app/pages/signup.dart';
 import 'package:coffee_app/pages/wallet.dart';
+import 'package:coffee_app/pages/bottomnav.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:coffee_app/service/user_service.dart';
@@ -94,7 +95,7 @@ class MyApp extends StatelessWidget {
                   );
                 }
                 // Sau khi dữ liệu người dùng đã được tải (hoặc cố gắng tải), hiển thị Home.
-                return const Home();
+                return const BottomNav();
               },
             );
           }

@@ -201,7 +201,7 @@ class _LogInState extends State<LogIn> {
                                           );
                                           Navigator.pushNamedAndRemoveUntil(
                                             context,
-                                            '/home',
+                                            '/', // Chuyển về root để hiển thị BottomNav
                                             (route) => false,
                                           );
                                         }

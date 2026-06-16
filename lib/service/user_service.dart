@@ -55,7 +55,7 @@ class UserService {
       final updates = <String, dynamic>{};
       if (fullName != null) updates['fullName'] = fullName;
       if (username != null) updates['username'] = username;
-      if (email != null) updates['e-mail'] = email;
+      if (email != null) updates['email'] = email;
       if (address != null) updates['address'] = address;
 
       await _firestore.collection('users').doc(uid).update(updates);

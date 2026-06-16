@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AppWidget {
-  static TextStyle SimpleTextFieldStyle() {
-    return TextStyle(color: Colors.black, fontSize: 18.0);
-  }
-
   static TextStyle whiteTextFieldStyle() {
     return TextStyle(
       color: Colors.white,

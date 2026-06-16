@@ -21,7 +21,7 @@ class UserModel {
     return {
       'fullName': fullName,
       'username': username,
-      'e-mail': email,
+      'email': email,
       'address': address,
       'createdAt': createdAt?.toIso8601String(),
     };
@@ -41,7 +41,7 @@ class UserModel {
       uid: uid,
       fullName: map['fullName'] as String?,
       username: map['username'] as String?,
-      email: map['e-mail'] as String?,
+      email: map['email'] as String?,
       address: map['address'] as String?,
       createdAt: createdAt,
     );

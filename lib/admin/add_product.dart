@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:coffee_app/service/widget_support.dart';
+import 'package:coffee_app/service/category_data.dart';
 import 'package:flutter/material.dart';
 
 class AddProduct extends StatefulWidget {
@@ -11,7 +12,7 @@ class AddProduct extends StatefulWidget {
 }
 
 class _AddProductState extends State<AddProduct> {
-  final List<String> categories = ['Cafe nóng', 'Cafe lạnh', 'Trà', 'Matcha'];
+  List<String> categories = [];
   String? selectedCategory;
 
   final TextEditingController nameController = TextEditingController();
@@ -22,6 +23,16 @@ class _AddProductState extends State<AddProduct> {
   bool isLoading = false;
 
   final Color coffeeBrown = const Color(0xFF6B4F35);
+
+  @override
+  void initState() {
+    super.initState();
+    // Lấy danh mục từ service và lọc bỏ "Tất cả"
+    categories = getCategories()
+        .map((e) => e.name ?? '')
+        .where((name) => name.isNotEmpty && name != "Tất cả")
+        .toList();
+  }
 
   @override
   void dispose() {

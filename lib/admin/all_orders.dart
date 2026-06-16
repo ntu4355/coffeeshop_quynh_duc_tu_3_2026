@@ -37,9 +37,40 @@ class _AllOrdersState extends State<AllOrders> {
       return; // Đã giao xong không đổi nữa
     }
 
-    await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
-      'status': nextStatus.name,
-    });
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).update(
+        {'status': nextStatus.name},
+      );
+
+      if (mounted) {
+        String message = '';
+        Color snackBarColor = Colors.green;
+        if (nextStatus == OrderStatus.delivered) {
+          message = "Đơn hàng đã được giao thành công!";
+        } else if (nextStatus == OrderStatus.shipping) {
+          message = "Đơn hàng đang được vận chuyển.";
+          snackBarColor = Colors.blue;
+        } else if (nextStatus == OrderStatus.receiving) {
+          message = "Đơn hàng đang được tiếp nhận.";
+          snackBarColor = Colors.orange;
+        }
+
+        if (message.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message), backgroundColor: snackBarColor),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Lỗi khi cập nhật trạng thái: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override

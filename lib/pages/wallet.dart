@@ -35,7 +35,7 @@ class _WalletPageState extends State<WalletPage> {
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
             hintText: 'Nhập số tiền',
-            suffixText: 'đ',
+            suffixText: 'k',
             border: OutlineInputBorder(),
           ),
         ),
@@ -244,46 +244,6 @@ class _WalletPageState extends State<WalletPage> {
             ],
           );
         },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(context, '/home');
-              break;
-            case 1:
-              Navigator.pushReplacementNamed(context, '/order');
-              break;
-            case 2:
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(context, '/profile');
-              break;
-          }
-        },
-        selectedItemColor: coffeeBrown,
-        unselectedItemColor: coffeeBrown.withOpacity(0.45),
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Trang chủ',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined),
-            label: 'Đơn hàng',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.payment_outlined),
-            label: 'Số dư',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Cá nhân',
-          ),
-        ],
       ),
     );
   }
