@@ -35,7 +35,7 @@ class _WalletPageState extends State<WalletPage> {
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
             hintText: 'Nhập số tiền',
-            suffixText: 'k',
+            suffixText: 'K',
             border: OutlineInputBorder(),
           ),
         ),

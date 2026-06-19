@@ -19,11 +19,19 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   List<CategoryModel> categories = [];
   int selectedCategoryIndex = 0;
+  final TextEditingController searchController = TextEditingController();
+  String searchQuery = "";
 
   @override
   void initState() {
     categories = getCategories();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   String _getGreeting() {
@@ -53,7 +61,9 @@ class _HomeState extends State<Home> {
   ];
 
   Widget _buildProductGrid(Color coffeeBrown) {
-    Query query = FirebaseFirestore.instance.collection('products');
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
+      'products',
+    );
 
     // Nếu không phải "Tất cả", thực hiện lọc theo danh mục
     if (selectedCategoryIndex != 0) {
@@ -73,9 +83,24 @@ class _HomeState extends State<Home> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final docs = snapshot.data?.docs ?? [];
+        var docs = snapshot.data?.docs ?? [];
+
+        // Lọc theo từ khóa tìm kiếm (Client-side filtering)
+        if (searchQuery.isNotEmpty) {
+          docs = docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final name = (data['name'] ?? '').toString().toLowerCase();
+            return name.contains(searchQuery.toLowerCase());
+          }).toList();
+        }
+
         if (docs.isEmpty) {
-          return const Center(child: Text('Không có sản phẩm nào'));
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: Text('Không tìm thấy sản phẩm nào'),
+            ),
+          );
         }
 
         return Column(
@@ -291,17 +316,21 @@ class _HomeState extends State<Home> {
                           },
                         ),
                         const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/profile'),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.person_outline,
-                              color: coffeeBrown,
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () =>
+                                Navigator.pushNamed(context, '/profile'),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.person_outline,
+                                color: coffeeBrown,
+                              ),
                             ),
                           ),
                         ),
@@ -316,12 +345,34 @@ class _HomeState extends State<Home> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const TextField(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value;
+                      });
+                    },
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm cà phê...',
-                      prefixIcon: Icon(Icons.search, color: Color(0xFF6B4F35)),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Color(0xFF6B4F35),
+                      ),
+                      suffixIcon: searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: Colors.grey),
+                              onPressed: () {
+                                searchController.clear();
+                                setState(() {
+                                  searchQuery = "";
+                                });
+                              },
+                            )
+                          : null,
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 16.0),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 16.0,
+                      ),
                     ),
                   ),
                 ),
@@ -342,21 +393,26 @@ class _HomeState extends State<Home> {
                     separatorBuilder: (_, _) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
                       final bool selected = selectedCategoryIndex == index;
-                      return GestureDetector(
-                        onTap: () =>
-                            setState(() => selectedCategoryIndex = index),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                          decoration: BoxDecoration(
-                            color: selected ? coffeeBrown : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            categories[index].name ?? '',
-                            style: TextStyle(
-                              color: selected ? Colors.white : coffeeBrown,
-                              fontWeight: FontWeight.w600,
+                      return MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () =>
+                              setState(() => selectedCategoryIndex = index),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20.0,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selected ? coffeeBrown : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              categories[index].name ?? '',
+                              style: TextStyle(
+                                color: selected ? Colors.white : coffeeBrown,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),

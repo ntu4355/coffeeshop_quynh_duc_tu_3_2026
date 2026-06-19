@@ -98,7 +98,7 @@ class _LogInState extends State<LogIn> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              'Chào mừng trở lại',
+                              'Chào mừng quý khách',
                               style: AppWidget.boldTextFieldStyle().copyWith(
                                 fontSize: 22.0,
                               ),
